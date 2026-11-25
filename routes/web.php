@@ -41,7 +41,7 @@ Route::middleware(['auth', 'role:staff'])->group(function () {
 });
 
 // Customer Dashboard
-Route::middleware(['auth', 'role:customer'])->group(function () {
+Route::middleware(['auth', 'role:customer', 'verified'])->group(function () {
     Route::get('/customer/dashboard', [CustomerDashboardController::class, 'index'])
         ->name('customer.dashboard');
 

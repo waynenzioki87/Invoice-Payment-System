@@ -63,7 +63,7 @@ class CustomerInvoiceAccessTest extends TestCase
             'email' => 'existing@example.com',
             'password' => 'Password123!',
             'password_confirmation' => 'Password123!',
-        ])->assertRedirect(route('customer.dashboard'));
+        ])->assertRedirect(route('verification.notice'));
 
         Mail::assertQueued(CustomerWelcomeMail::class, fn ($mail): bool => $mail->hasTo('existing@example.com'));
         $this->assertSame(

@@ -14,7 +14,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rules;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class RegisteredUserController extends Controller
@@ -29,18 +28,31 @@ class RegisteredUserController extends Controller
 
     /**
      * Handle an incoming registration request.
-     *
-     * @throws ValidationException
      */
-    public function store(Request $request, CustomerAccountService $customerAccounts): RedirectResponse
-    {
+    public function store(
+        Request $request,
+        CustomerAccountService $customerAccounts
+    ): RedirectResponse {
+
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'email' => [
+                'required',
+                'string',
+                'lowercase',
+                'email',
+                'max:255',
+                'unique:'.User::class,
+            ],
+            'password' => [
+                'required',
+                'confirmed',
+                Rules\Password::defaults(),
+            ],
         ]);
 
         $user = DB::transaction(function () use ($request, $customerAccounts): User {
+
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
@@ -53,11 +65,16 @@ class RegisteredUserController extends Controller
             return $user;
         });
 
+        // Trigger Laravel's email verification notification
         event(new Registered($user));
 
+        // Log the newly registered user in
         Auth::login($user);
+
+        // Send the welcome email
         Mail::to($user->email)->queue(new CustomerWelcomeMail($user));
 
-        return redirect()->route('customer.dashboard');
+        // Redirect to email verification instead of the dashboard
+        return redirect()->route('verification.notice');
     }
 }
