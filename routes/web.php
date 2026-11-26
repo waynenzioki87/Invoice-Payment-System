@@ -19,6 +19,7 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
+// Dashboard Redirect
 Route::get('/dashboard', function () {
     return match (auth()->user()->role) {
         'admin' => redirect()->route('admin.dashboard'),
@@ -40,27 +41,37 @@ Route::middleware(['auth', 'role:staff'])->group(function () {
         ->name('staff.dashboard');
 });
 
-// Customer Dashboard
-Route::middleware(['auth', 'role:customer', 'verified'])->group(function () {
+// Customer Dashboard & Portal
+// Email verification requirement REMOVED
+Route::middleware(['auth', 'role:customer'])->group(function () {
+
     Route::get('/customer/dashboard', [CustomerDashboardController::class, 'index'])
         ->name('customer.dashboard');
 
     Route::get('/customer/invoices', [CustomerPortalController::class, 'invoices'])
         ->name('customer.invoices.index');
+
     Route::get('/customer/invoices/{invoice}', [CustomerPortalController::class, 'invoice'])
         ->name('customer.invoices.show');
+
     Route::get('/customer/invoices/{invoice}/pdf', [CustomerPortalController::class, 'downloadInvoice'])
         ->name('customer.invoices.pdf');
+
     Route::get('/customer/invoices/{invoice}/print', [CustomerPortalController::class, 'printInvoice'])
         ->name('customer.invoices.print');
+
     Route::get('/customer/payments', [CustomerPortalController::class, 'payments'])
         ->name('customer.payments.index');
+
     Route::get('/customer/payments/{payment}', [CustomerPortalController::class, 'payment'])
         ->name('customer.payments.show');
+
     Route::get('/customer/payments/{payment}/receipt', [CustomerPortalController::class, 'downloadReceipt'])
         ->name('customer.payments.receipt');
+
     Route::get('/customer/payments/{payment}/receipt/print', [CustomerPortalController::class, 'printReceipt'])
         ->name('customer.payments.receipt.print');
+
     Route::get('/customer/receipts', [CustomerPortalController::class, 'receipts'])
         ->name('customer.receipts.index');
 });
@@ -68,8 +79,10 @@ Route::middleware(['auth', 'role:customer', 'verified'])->group(function () {
 // Admin and Staff Management
 Route::middleware(['auth', 'role:admin,staff'])->group(function () {
 
+    // Reports
     Route::get('/reports', [ReportsController::class, 'index'])
         ->name('reports.index');
+
     Route::get('/reports/export', [ReportsController::class, 'export'])
         ->name('reports.export');
 
@@ -78,31 +91,39 @@ Route::middleware(['auth', 'role:admin,staff'])->group(function () {
 
     // Invoice Management
     Route::resource('invoices', InvoiceController::class);
+
     Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf'])
         ->name('invoices.pdf');
+
     Route::get('/invoices/{invoice}/print', [InvoiceController::class, 'print'])
         ->name('invoices.print');
+
     Route::post('/invoices/{invoice}/duplicate', [InvoiceController::class, 'duplicate'])
         ->name('invoices.duplicate');
 
     // Payment Management
     Route::resource('payments', PaymentController::class)
         ->only(['index', 'create', 'store', 'show']);
+
     Route::get('/payments/{payment}/receipt', [PaymentController::class, 'downloadReceipt'])
         ->name('payments.receipt');
+
     Route::get('/payments/{payment}/receipt/print', [PaymentController::class, 'printReceipt'])
         ->name('payments.receipt.print');
 
+    // M-Pesa
     Route::post('/payments/mpesa', [MpesaController::class, 'initiate'])
         ->name('payments.mpesa.initiate');
 });
 
+// M-Pesa Callback
 Route::post('/mpesa/callback', [MpesaController::class, 'callback'])
     ->withoutMiddleware([ValidateCsrfToken::class])
     ->name('mpesa.callback');
 
 // Profile Routes
 Route::middleware('auth')->group(function () {
+
     Route::get('/profile', [ProfileController::class, 'edit'])
         ->name('profile.edit');
 
@@ -113,4 +134,5 @@ Route::middleware('auth')->group(function () {
         ->name('profile.destroy');
 });
 
+// Authentication Routes
 require __DIR__.'/auth.php';
