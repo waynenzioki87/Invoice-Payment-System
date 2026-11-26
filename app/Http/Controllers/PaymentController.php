@@ -40,8 +40,18 @@ class PaymentController extends Controller
     }
 
     // Show payment form
-    public function create()
+    public function create(Request $request)
     {
+        $validated = $request->validate([
+            'invoice_id' => ['nullable', 'integer', 'exists:invoices,id'],
+            'payment_method' => ['nullable', Rule::in([
+                'cash',
+                'bank_transfer',
+                'card',
+                'mpesa',
+            ])],
+        ]);
+
         $invoices = Invoice::with('customer')
             ->whereIn('status', ['unpaid', 'partial', 'overdue'])
             ->orderBy('created_at', 'desc')
@@ -62,7 +72,25 @@ class PaymentController extends Controller
             );
         });
 
-        return view('payments.create', compact('invoices'));
+        $selectedInvoice = $invoices->firstWhere('id', (int) ($validated['invoice_id'] ?? 0));
+        $selectedPaymentMethod = $validated['payment_method'] ?? '';
+        $defaultAmount = $selectedInvoice
+            ? number_format(
+                $selectedPaymentMethod === 'mpesa'
+                    ? floor($selectedInvoice->balance_due)
+                    : $selectedInvoice->balance_due,
+                $selectedPaymentMethod === 'mpesa' ? 0 : 2,
+                '.',
+                ''
+            )
+            : '';
+
+        return view('payments.create', compact(
+            'invoices',
+            'selectedInvoice',
+            'selectedPaymentMethod',
+            'defaultAmount'
+        ));
     }
 
     // Record a payment

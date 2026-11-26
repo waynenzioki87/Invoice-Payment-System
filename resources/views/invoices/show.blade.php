@@ -179,7 +179,13 @@
 
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="mb-0">Payment History</h5>
-                <a href="{{ route('payments.create') }}" class="btn btn-sm btn-outline-primary">Record Payment</a>
+                <div class="d-flex gap-2">
+                    @if($invoice->currency_code === 'KES' && in_array($invoice->status, ['unpaid', 'partial', 'overdue'], true))
+                        <a href="{{ route('payments.create', ['invoice_id' => $invoice->id, 'payment_method' => 'mpesa']) }}"
+                           class="btn btn-sm btn-outline-success">Initiate M-Pesa Payment</a>
+                    @endif
+                    <a href="{{ route('payments.create', ['invoice_id' => $invoice->id]) }}" class="btn btn-sm btn-outline-primary">Record Payment</a>
+                </div>
             </div>
             <div class="table-responsive">
                 <table class="table table-hover align-middle">

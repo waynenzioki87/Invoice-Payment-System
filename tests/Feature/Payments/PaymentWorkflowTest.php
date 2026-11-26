@@ -73,6 +73,28 @@ class PaymentWorkflowTest extends TestCase
         $this->assertDatabaseCount('payments', 0);
     }
 
+    public function test_invoice_can_open_prefilled_mpesa_payment_form(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => 'staff']));
+        $invoice = $this->createInvoice('100.00');
+
+        $this->get(route('invoices.index'))
+            ->assertOk()
+            ->assertSee('Initiate payment');
+
+        $this->get(route('payments.create', [
+            'invoice_id' => $invoice->id,
+            'payment_method' => 'mpesa',
+        ]))
+            ->assertOk()
+            ->assertSee('value="'.$invoice->id.'" selected', false)
+            ->assertSee('value="mpesa" selected', false)
+            ->assertSee('step="1"', false)
+            ->assertSee('min="1"', false)
+            ->assertSee('value="100"', false)
+            ->assertSee('value="0712345678"', false);
+    }
+
     public function test_payment_amount_must_be_positive_and_have_at_most_two_decimals(): void
     {
         $this->actingAs(User::factory()->create(['role' => 'staff']));

@@ -82,6 +82,12 @@
                                     @endif
                                 </td>
                                 <td class="text-nowrap">
+                                    @if($invoice->currency_code === 'KES' && in_array($invoice->status, ['unpaid', 'partial', 'overdue'], true))
+                                        <a href="{{ route('payments.create', ['invoice_id' => $invoice->id, 'payment_method' => 'mpesa']) }}"
+                                           class="btn btn-sm btn-outline-success" aria-label="Initiate payment for {{ $invoice->invoice_number }}">
+                                            Initiate payment
+                                        </a>
+                                    @endif
                                     <a href="{{ route('invoices.show', $invoice->id) }}" class="btn btn-sm btn-outline-primary">View</a>
                                     <a href="{{ route('invoices.edit', $invoice->id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
                                     <form action="{{ route('invoices.destroy', $invoice->id) }}" method="POST" class="d-inline">

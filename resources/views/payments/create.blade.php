@@ -34,21 +34,23 @@
                             <select id="invoice_id" name="invoice_id" class="form-select @error('invoice_id') is-invalid @enderror" required>
                                 <option value="">Choose an invoice</option>
                                 @foreach($invoices as $invoice)
-                                    <option value="{{ $invoice->id }}" @selected(old('invoice_id') == $invoice->id)>
+                                    <option value="{{ $invoice->id }}" @selected(old('invoice_id', $selectedInvoice?->id) == $invoice->id)>
                                         {{ $invoice->invoice_number }} — {{ $invoice->customer->name }}
                                         · Due {{ $invoice->currency_symbol }} {{ number_format($invoice->balance_due, 2) }}
                                     </option>
                                 @endforeach
                             </select>
                             @error('invoice_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                            <div class="form-text">The due amount is calculated from completed payments only.</div>
+                            <div class="form-text">The available balance excludes completed payments and pending payment requests.</div>
                         </div>
 
                         <div class="mb-3">
                             <label for="amount" class="form-label fw-semibold">Amount</label>
                             <input id="amount" type="number" name="amount"
                                    class="form-control @error('amount') is-invalid @enderror"
-                                   step="0.01" min="0.01" value="{{ old('amount') }}" required>
+                                   step="{{ $selectedPaymentMethod === 'mpesa' ? '1' : '0.01' }}"
+                                   min="{{ $selectedPaymentMethod === 'mpesa' ? '1' : '0.01' }}"
+                                   value="{{ old('amount', $defaultAmount) }}" required>
                             @error('amount')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
@@ -58,10 +60,10 @@
                                 <select id="payment_method" name="payment_method"
                                         class="form-select @error('payment_method') is-invalid @enderror" required>
                                     <option value="">Select a method</option>
-                                    <option value="cash" @selected(old('payment_method') === 'cash')>Cash</option>
-                                    <option value="bank_transfer" @selected(old('payment_method') === 'bank_transfer')>Bank transfer</option>
-                                    <option value="card" @selected(old('payment_method') === 'card')>Card</option>
-                                    <option value="mpesa" @selected(old('payment_method') === 'mpesa')>M-Pesa STK push</option>
+                                    <option value="cash" @selected(old('payment_method', $selectedPaymentMethod) === 'cash')>Cash</option>
+                                    <option value="bank_transfer" @selected(old('payment_method', $selectedPaymentMethod) === 'bank_transfer')>Bank transfer</option>
+                                    <option value="card" @selected(old('payment_method', $selectedPaymentMethod) === 'card')>Card</option>
+                                    <option value="mpesa" @selected(old('payment_method', $selectedPaymentMethod) === 'mpesa')>M-Pesa STK push</option>
                                 </select>
                                 @error('payment_method')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
@@ -79,7 +81,7 @@
                             <label for="phone_number" class="form-label fw-semibold">M-Pesa phone number</label>
                             <input id="phone_number" type="tel" name="phone_number"
                                    class="form-control @error('phone_number') is-invalid @enderror"
-                                   value="{{ old('phone_number') }}" placeholder="07XXXXXXXX or 2547XXXXXXXX"
+                                   value="{{ old('phone_number', $selectedInvoice?->customer->phone) }}" placeholder="07XXXXXXXX or 2547XXXXXXXX"
                                    autocomplete="tel" disabled>
                             @error('phone_number')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             <div class="form-text">The customer must approve the STK prompt on their phone. M-Pesa requires a KES invoice and a whole-shilling amount.</div>
@@ -124,6 +126,7 @@
             phoneInput.required = isMpesa;
             referenceInput.disabled = isMpesa;
             amountInput.step = isMpesa ? '1' : '0.01';
+            amountInput.min = isMpesa ? '1' : '0.01';
             paymentButton.innerHTML = isMpesa
                 ? '<i class="bi bi-phone me-1"></i> Send STK Prompt'
                 : '<i class="bi bi-check2-circle me-1"></i> Save Payment';
