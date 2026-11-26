@@ -25,7 +25,10 @@ class DashboardStatisticsTest extends TestCase
             ->assertViewHas('totalInvoices', 1)
             ->assertViewHas('currencyTotals', fn ($rows): bool => $rows->count() === 1
                 && (float) $rows->first()->paid_total === 35.0
-                && (float) $rows->first()->outstanding_total === 65.0);
+                && (float) $rows->first()->outstanding_total === 65.0)
+            ->assertViewHas('monthlyInvoices', fn ($rows): bool => $rows->count() === 1
+                && (int) $rows->first()->month === now()->month
+                && (int) $rows->first()->total === 1);
     }
 
     public function test_staff_dashboard_counts_owned_work_and_outstanding_invoices(): void

@@ -16,7 +16,7 @@ INVOICEX is a Laravel invoicing and payment application for managing customers, 
 
 - PHP 8.2+
 - Laravel 12
-- MySQL/MariaDB for local or production data; SQLite is used by the automated tests.
+- MySQL/MariaDB or PostgreSQL for application data; SQLite is used by the automated tests.
 - Blade, Bootstrap, Vite, and Dompdf
 
 ## Local setup
@@ -60,7 +60,7 @@ Routes are protected by authentication and role middleware. Customer ownership i
 
 ## Email and reminders
 
-Set `MAIL_MAILER`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, and `MAIL_FROM_ADDRESS` in `.env` for SMTP. The example configuration uses the log mailer and will not send external email.
+Set `MAIL_MAILER`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_SCHEME`, and `MAIL_FROM_ADDRESS` in `.env` for SMTP. The example configuration uses the log mailer and will not send external email.
 
 Run a queue worker for welcome, invoice, reminder, and payment receipt messages. Invoice reminders are eligible for unpaid invoices due within three days or overdue, and are limited to one every seven days per invoice. Add Laravel's scheduler to the host's scheduled tasks (run `php artisan schedule:run` every minute) for the daily reminder schedule.
 
@@ -78,8 +78,14 @@ php artisan test
 
 The feature tests use SQLite in memory and fake Daraja HTTP responses and queued mail; they do not prove live Safaricom or SMTP connectivity.
 
-## Project status and deployment notes
+## Deploying to Render
 
-This repository currently has no Git remote configured. Set up and verify the intended GitHub repository before pushing. Keep `.env` and all credentials out of commits, and configure production database, mail, queue, HTTPS, and scheduled-task services before deployment.
+The included `Dockerfile` builds the Vite assets and runs Laravel through Apache. The Render Blueprint in `render.yaml` defines a web service, PostgreSQL database, queue worker, and a once-per-minute scheduler for Laravel's scheduled reminders. The database migration runs before each web deploy. All services use the Frankfurt region.
 
-No project screenshots or developer contact details are included yet.
+1. Connect the GitHub repository to Render and select the `render.yaml` Blueprint.
+2. Review resource plans and costs before syncing. The Blueprint uses paid plans so the database persists and queued email, SMTP, and scheduled tasks can run reliably. Render's free database expires after 30 days, and free web services cannot send SMTP traffic on ports 465/587.
+3. Configure the prompted `APP_KEY`, SMTP, and Daraja values in Render's environment settings. Generate the Laravel key with `php artisan key:generate --show`; enter it only in Render, never in source control or chat.
+4. Confirm `APP_URL` and `MPESA_CALLBACK_URL` match the actual Render service URL (the callback path is `/mpesa/callback`) if Render assigns a different hostname.
+5. After the first successful deploy, provision the initial admin account through a secure production process. The default seeder is for tests and must not be used to create production credentials.
+
+Render's filesystem is ephemeral; do not rely on files written to the container surviving restarts or deploys. The app currently generates invoices and receipts on demand rather than storing uploaded documents. Never commit `.env` or paste credentials into source control.

@@ -49,7 +49,7 @@ class AdminDashboardController extends Controller
         // Monthly invoice activity for the current year
         $monthExpression = DB::connection()->getDriverName() === 'sqlite'
             ? "CAST(strftime('%m', created_at) AS INTEGER)"
-            : 'MONTH(created_at)';
+            : 'EXTRACT(MONTH FROM created_at)';
 
         $monthlyInvoices = Invoice::select(
             DB::raw($monthExpression.' as month'),
